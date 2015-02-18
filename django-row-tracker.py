@@ -1,3 +1,4 @@
+import argparse
 import sys
 
 from django.core.management import setup_environ
@@ -26,10 +27,21 @@ def get_model_info():
             print "Unexpected error and abending:", sys.exc_info()[0]
             break
 
+def process_args():
+    '''
+    Process command line args
+    '''
+    parser = argparse.ArgumentParser()
+    parser.add_argument("path_to_project_root")
+    parser.add_argument("project_name")
+    args = parser.parse_args()
+    return args
+
 def main():
     '''
     Handle main processing
     '''
+    args = process_args()
     get_model_info()
 
 
