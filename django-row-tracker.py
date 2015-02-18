@@ -3,15 +3,13 @@ import sys
 import os
 import datetime
 
-#import myzodb
-#from django.core.management import setup_environ
-#
-#import settings
-#setup_environ(settings)
-
 import sqlite3
 
+
 def create_tables_if_necessary(conn):
+    '''
+    Creates the tables within an empty database
+    '''
     lst_sql = []
     lst_sql.append('''
     CREATE TABLE IF NOT EXISTS [DRC_PROJECT] (  \
@@ -38,7 +36,7 @@ def create_tables_if_necessary(conn):
     ''')
 
     lst_sql.append('''
-    CREATE TABLE IF NOT EXISTS [DRC_RUN_RESULTS] (  \
+    CREATE TABLE IF NOT EXISTS [DRC_RUN_RESULT] (  \
             [RUR_ID] INTEGER  PRIMARY KEY AUTOINCREMENT NOT NULL,  \
             [RUR_RUN_ID] INTEGER  NULL,  \
             [RUR_MOD_ID] INTEGER  NULL,  \
@@ -51,11 +49,14 @@ def create_tables_if_necessary(conn):
 
     conn.commit()
 
-def initialize_for_this_run(conn, project_name):
 
+def initialize_for_this_run(conn, project_name):
+    '''
+    Obtains or creates a DRC_PROJECT row and creates a new DRC_RUN row
+    '''
     c = conn.cursor()
 
-    #Get or create Project
+    # Get or create Project
     c.execute('''SELECT * FROM DRC_PROJECT WHERE PRO_NAME = "{proj_name}"'''.format(proj_name=project_name))
     id_exists = c.fetchone()
     if id_exists:
@@ -64,19 +65,23 @@ def initialize_for_this_run(conn, project_name):
         c.execute('''INSERT INTO DRC_PROJECT (PRO_NAME) VALUES ("{proj_name}")'''.format(proj_name=project_name))
         proj_id = c.lastrowid
 
-    #Create a Run row
+    # Create a Run row
     comment = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
     c.execute('''INSERT INTO DRC_RUN (RUN_PRO_ID, RUN_COMMENT) VALUES ({pro_id}, "{the_comment}")'''.format(pro_id=proj_id, the_comment=comment))
     run_id = c.lastrowid
 
     conn.commit()
 
-    return {'proj_id':proj_id, 'run_id':run_id}
+    return {'proj_id': proj_id, 'run_id': run_id}
+
 
 def insert_run_result(conn, proj_id, run_id, tab_name, row_count):
+    '''
+    Inserts a DRC_RUN_RESULT for a single model
+    '''
 
     c = conn.cursor()
-    #Get or create Project
+    # Get or create Project
     c.execute('''SELECT * FROM DRC_MODEL WHERE MOD_PRO_ID = {proj_id} AND MOD_TABLENAME = "{table_name}"'''.format(proj_id=proj_id, table_name=tab_name))
     id_exists = c.fetchone()
     if id_exists:
@@ -85,11 +90,12 @@ def insert_run_result(conn, proj_id, run_id, tab_name, row_count):
         c.execute('''INSERT INTO DRC_MODEL (MOD_PRO_ID, MOD_TABLENAME) VALUES ({pro_id}, "{table_name}")'''.format(pro_id=proj_id, table_name=tab_name))
         mod_id = c.lastrowid
 
-    #Create a Result row
+    # Create a Result row
     comment = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
-    c.execute('''INSERT INTO DRC_RUN_RESULTS (RUR_RUN_ID, RUR_MOD_ID, RUR_ROW_COUNT) VALUES ({run_id}, {mod_id}, {rowcnt})'''.format(run_id=run_id, mod_id=mod_id, rowcnt=row_count))
+    c.execute('''INSERT INTO DRC_RUN_RESULT (RUR_RUN_ID, RUR_MOD_ID, RUR_ROW_COUNT) VALUES ({run_id}, {mod_id}, {rowcnt})'''.format(run_id=run_id, mod_id=mod_id, rowcnt=row_count))
 
     conn.commit()
+
 
 def get_model_info(project_name):
     '''
@@ -112,16 +118,17 @@ def get_model_info(project_name):
 
         for them in project_models:
             try:
-                table_name = them._meta.db_table  
+                table_name = them._meta.db_table
                 row_count = them.objects.all().count()
                 print table_name + " " + str(row_count)
-                insert_run_result(conn, dic_id['proj_id'], dic_id['run_id'], table_name, row_count )
+                insert_run_result(conn, dic_id['proj_id'], dic_id['run_id'], table_name, row_count)
             except DatabaseError:
-                print "Unexpected error and continuing:", sys.exc_info()[0] , " ", them
+                print "Unexpected error and continuing:", sys.exc_info()[0], " ", them
                 rollback_unless_managed()
             except:
                 print "Unexpected error and abending:", sys.exc_info()[0]
                 break
+
 
 def process_args():
     '''
@@ -135,6 +142,7 @@ def process_args():
 
     return args
 
+
 def setup_env(args):
     '''
     Do what's necessary to allow this script to access the
@@ -143,6 +151,7 @@ def setup_env(args):
     sys.path.append(os.path.abspath(args.path_to_project_root))
     sys.path.append('%s/%s' % (os.path.abspath(args.path_to_project_root), args.project_name))
     os.environ['DJANGO_SETTINGS_MODULE'] = '%s.settings' % args.project_name
+
 
 def main():
     '''
@@ -155,4 +164,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
