@@ -2,6 +2,7 @@ import argparse
 import sys
 import os
 
+#import myzodb
 #from django.core.management import setup_environ
 #
 #import settings
