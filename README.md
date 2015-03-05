@@ -11,9 +11,15 @@ Each run is timestamped and the user is able to supply a comment describing the 
 
 Multiple projects may be tracked within the same database.
 
+
 Version 
 --------
 1.1.
+
+
+Virtenv 
+--------
+With my testing to date which I have done is to activate the virtenv in which the target project normally runs and then run the script. There may be other valid approaches but that's what I've done so far.
 
 
 Running 
